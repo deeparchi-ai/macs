@@ -10,12 +10,17 @@ timings/resources — into a `macs.dump.v0` JSON artifact.
   changes**; **fail-open** (never breaks the agent).
 - Dumps → `~/.hermes/macs-dump/<date>/` plus `index.jsonl`.
 
-## Install (dogfood)
+## Install
+
+Self-contained (standard library only — **no `pip install` needed**):
 
 ```bash
-pip install -e <path-to-macs-repo>     # makes `macs` importable
 cp -r integrations/hermes-plugin  <hermes>/plugins/observability/macs_dump
+hermes plugins enable observability/macs_dump   # takes effect on next session
 ```
+
+Default triggers are SLIP-style escalation only (repeat-fail ×3 / latency >30s /
+abnormal finish) — quiet until something is genuinely worth a snapshot.
 
 ## Config (`plugin.yaml` consumers / ctx.config)
 

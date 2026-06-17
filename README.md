@@ -50,24 +50,27 @@ python tests/test_hermes_adapter.py   # end-to-end: fake ctx -> dump on disk
 # or, if pytest is installed:  pytest -q
 ```
 
-## Use with Hermes (dogfood)
+## Use with Hermes
+
+`integrations/hermes-plugin/` is a **self-contained, stdlib-only** plugin (no
+`pip install`, no dependency on this package) — it's both the dogfood artifact and
+the upstream PR artifact:
 
 ```bash
-pip install -e .                       # makes `macs` importable
-# copy integrations/hermes-plugin -> your Hermes plugins/observability/macs_dump/
+cp -r integrations/hermes-plugin  <hermes>/plugins/observability/macs_dump
+hermes plugins enable observability/macs_dump
 # dumps land in ~/.hermes/macs-dump/<date>/  (+ index.jsonl)
 ```
 
-The Hermes plugin is a thin shell over `macs.dump.adapters.hermes.register`; it
-subscribes **read-only** to observer hooks and never touches middleware — **zero
-core changes, fail-open**.
+It subscribes **read-only** to observer hooks, never touches middleware — **zero
+core changes, fail-open** — and was verified against the installed Hermes
+**v0.16.0** (registers into the real `PluginManager`, fires through the real
+`invoke_hook`). The canonical multi-runtime core lives in `macs/dump/` and shares
+the `macs.dump.v0` schema with the vendored plugin.
 
-### Upstream packaging note
-For a PR into `NousResearch/hermes-agent`, ship a **self-contained, zero-dependency
-vendored** copy of the small core inside the plugin (Hermes won't take a dep on an
-external package). This repo keeps the canonical, multi-runtime version; both share
-the `macs.dump.v0` schema. Relates to Hermes issues #6741 (structured tracing) and
-#6642 (unified telemetry).
+Upstreaming notes, PR body and the #6741 comment draft:
+[`integrations/hermes-plugin/UPSTREAM.md`](integrations/hermes-plugin/UPSTREAM.md).
+Relates to Hermes #6741 (structured tracing) and #6642 (unified telemetry).
 
 ## Status & ownership
 
