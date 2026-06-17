@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deeparchi.dev/schema/macs.dump.v0.json",
+  "title": "MACS Decision-Chain Dump",
+  "description": "Self-contained snapshot of one agent turn, frozen when a SLIP-style trigger fires. The agent equivalent of a CICS Transaction DUMP. Runtime-agnostic interoperability contract.",
+  "type": "object",
+  "required": [
+    "dump_id", "schema", "source_telemetry_schema", "captured_at", "trigger",
+    "correlation", "context", "llm_response", "tool_calls", "subagents",
+    "control_block", "env"
+  ],
+  "properties": {
+    "dump_id": { "type": "string" },
+    "schema": { "const": "macs.dump.v0" },
+    "source_telemetry_schema": { "type": "string", "description": "Upstream runtime telemetry schema, e.g. hermes.observer.v1" },
+    "captured_at": { "type": "string", "format": "date-time" },
+    "trigger": {
+      "type": "object",
+      "required": ["predicate"],
+      "properties": {
+        "predicate": { "type": "string" },
+        "detail": { "type": "string" },
+        "matched_value": {},
+        "threshold": {}
+      }
+    },
+    "correlation": {
+      "type": "object",
+      "properties": {
+        "session_id": { "type": ["string", "null"] },
+        "turn_id": { "type": ["string", "null"] },
+        "api_request_id": { "type": ["string", "null"] },
+        "parent_session_id": { "type": ["string", "null"] },
+        "subagent_id": { "type": ["string", "null"] }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Working Storage: what was sent to the model.",
+      "properties": {
+        "model": { "type": ["string", "null"] },
+        "provider": { "type": ["string", "null"] },
+        "system_prompt": { "type": ["string", "null"] },
+        "input_messages": { "type": ["array", "null"] },
+        "approx_input_tokens": { "type": ["integer", "null"] }
+      }
+    },
+    "llm_response": {
+      "type": "object",
+      "description": "The full model return (not a summary).",
+      "properties": {
+        "assistant_message": {},
+        "finish_reason": { "type": ["string", "null"] },
+        "usage": { "type": ["object", "null"] },
+        "reasoning": { "type": ["string", "null"] }
+      }
+    },
+    "tool_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tool_call_id": { "type": ["string", "null"] },
+          "tool_name": { "type": ["string", "null"] },
+          "args": {},
+          "status": { "type": ["string", "null"] },
+          "duration_ms": { "type": ["number", "null"] },
+          "result": {},
+          "error_type": { "type": ["string", "null"] },
+          "error_message": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "subagents": { "type": "array" },
+    "control_block": {
+      "type": "object",
+      "description": "Task Control Block analog: timings, resources, retries.",
+      "properties": {
+        "started_at": { "type": ["number", "null"] },
+        "api_call_count": { "type": ["integer", "null"] },
+        "tool_call_count": { "type": ["integer", "null"] },
+        "retry_count": { "type": ["integer", "null"] },
+        "duration_ms": { "type": ["number", "null"] },
+        "tokens": { "type": ["object", "null"] },
+        "estimated_cost_usd": { "type": ["number", "null"] }
+      }
+    },
+    "env": {
+      "type": "object",
+      "properties": {
+        "hermes_version": { "type": ["string", "null"] },
+        "platform": { "type": ["string", "null"] },
+        "cwd": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

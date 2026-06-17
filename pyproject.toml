@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macs"
+version = "0.1.0"
+description = "MACS — a thin semantic-governance overlay for multi-agent runtimes. Reference implementation, starting with the Decision-Chain Dump (CICS DUMP/SLIP, for agents)."
+authors = [{ name = "DeepArchi (Kuang Mi)" }]
+requires-python = ">=3.9"
+license = { text = "MIT" }
+urls = { Homepage = "https://github.com/DeepArchi/macs" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["macs*"]

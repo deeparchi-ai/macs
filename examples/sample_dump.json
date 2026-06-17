@@ -1,0 +1,99 @@
+{
+  "dump_id": "9b1f...demo",
+  "schema": "macs.dump.v0",
+  "source_telemetry_schema": "hermes.observer.v1",
+  "captured_at": "2026-06-16T09:12:33+00:00",
+  "trigger": {
+    "predicate": "tool_repeat_fail",
+    "detail": "tool=web.fetch",
+    "matched_value": 3,
+    "threshold": 3
+  },
+  "correlation": {
+    "session_id": "sess-7f3a",
+    "turn_id": "turn-12",
+    "api_request_id": "api-1",
+    "parent_session_id": null,
+    "subagent_id": null
+  },
+  "context": {
+    "model": "claude-opus",
+    "provider": "anthropic",
+    "system_prompt": "You are Hermes, an autonomous agent...",
+    "input_messages": [
+      {
+        "role": "user",
+        "content": "抓取并汇总这份季度报告"
+      }
+    ],
+    "approx_input_tokens": 1840
+  },
+  "llm_response": {
+    "assistant_message": {
+      "role": "assistant",
+      "content": "我已尝试获取报告但连续超时..."
+    },
+    "finish_reason": "stop",
+    "usage": {
+      "input": 1840,
+      "output": 95
+    },
+    "reasoning": null
+  },
+  "tool_calls": [
+    {
+      "tool_call_id": "t0",
+      "tool_name": "web.fetch",
+      "args": {
+        "url": "https://example.com/q3.pdf"
+      },
+      "status": "error",
+      "duration_ms": 30021,
+      "result": null,
+      "error_type": "Timeout",
+      "error_message": "read timeout after 30s"
+    },
+    {
+      "tool_call_id": "t1",
+      "tool_name": "web.fetch",
+      "args": {
+        "url": "https://example.com/q3.pdf"
+      },
+      "status": "error",
+      "duration_ms": 30021,
+      "result": null,
+      "error_type": "Timeout",
+      "error_message": "read timeout after 30s"
+    },
+    {
+      "tool_call_id": "t2",
+      "tool_name": "web.fetch",
+      "args": {
+        "url": "https://example.com/q3.pdf"
+      },
+      "status": "error",
+      "duration_ms": 30021,
+      "result": null,
+      "error_type": "Timeout",
+      "error_message": "read timeout after 30s"
+    }
+  ],
+  "subagents": [],
+  "control_block": {
+    "started_at": 1718500000.0,
+    "api_call_count": 1,
+    "tool_call_count": 3,
+    "retry_count": 0,
+    "duration_ms": 2100,
+    "tokens": {
+      "input": 1840,
+      "output": 95
+    },
+    "estimated_cost_usd": null
+  },
+  "env": {
+    "hermes_version": "9.x",
+    "platform": "telegram",
+    "cwd": null
+  }
+}
