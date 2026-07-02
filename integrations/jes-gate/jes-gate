@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""JES Gate — batch job admission control.
+
+Reads the WLM token budget signal file and decides whether a cron job
+should run based on its importance level.
+
+Usage:
+    jes-gate --importance N --command "hermes cron run job-id"
+
+Gate rules (aligned with MACS §6 JES + §2 WLM):
+    importance=1: only blocked at BLACK (critical work never starved)
+    importance=2: blocked at RED or BLACK
+    importance=3: blocked at YELLOW, RED, or BLACK (batch yields to online)
+
+Signals read from ~/.hermes/wlm_signal.txt (written by wlm-token hook).
+If the signal file says wlmd is not running, all jobs pass (budget enforcement
+is off — no signal to respect).
+
+Exit codes:
+    0   — admitted (signal is below block threshold for this importance)
+    1   — blocked (signal is at or above block threshold)
+    2   — error (no signal file, permission, etc.)
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+SIGNAL_FILE = Path.home() / ".hermes" / "wlm_signal.txt"
+
+# Per-importance block thresholds: at what signal level do we block?
+BLOCK_THRESHOLD = {
+    1: {"black"},                    # importance=1: only BLACK blocks
+    2: {"red", "black"},             # importance=2: RED or BLACK
+    3: {"yellow", "red", "black"},   # importance=3: YELLOW+ (batch yields)
+}
+
+
+def parse_signal(path: Path) -> dict[str, str]:
+    """Parse the WLM signal file into {class_name: signal_level}.
+
+    Returns empty dict if wlmd is not running (no enforcement).
+    """
+    if not path.exists():
+        return {}
+
+    text = path.read_text().strip()
+    if not text or "wlmd not detected" in text.lower():
+        return {}
+
+    levels = {}
+    for line in text.splitlines():
+        if line.startswith("#"):
+            continue
+        # Format: 🟢 class_name           green  1,234/100,000 tokens (1%)
+        parts = line.split()
+        if len(parts) >= 3:
+            # parts[0] = emoji, parts[1] = class_name, parts[2] = level
+            levels[parts[1]] = parts[2].strip(",")
+
+    return levels
+
+
+def get_worst_level(levels: dict[str, str]) -> str:
+    """Return the most restrictive signal across all classes.
+
+    Order: green < yellow < red < black
+    """
+    order = {"green": 0, "yellow": 1, "red": 2, "black": 3}
+    worst = "green"
+    worst_ord = -1
+    for name, level in levels.items():
+        if order.get(level, -1) > worst_ord:
+            worst = level
+            worst_ord = order[level]
+    return worst
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="JES Gate — WLM-aware cron admission control"
+    )
+    parser.add_argument("--importance", type=int, required=True,
+                        choices=[1, 2, 3],
+                        help="Job importance (1=critical, 3=best-effort)")
+    parser.add_argument("--command", type=str, required=True,
+                        help="Command to run if admitted")
+    parser.add_argument("--signal-file", type=str, default=str(SIGNAL_FILE),
+                        help="Path to WLM signal file")
+    args = parser.parse_args()
+
+    # Read WLM signal
+    signal_path = Path(args.signal_file)
+    if not signal_path.exists():
+        print(f"[JES-gate] no signal file at {signal_path} — no enforcement, admitted",
+              file=sys.stderr)
+        os.execvp("bash", ["bash", "-c", args.command])
+
+    levels = parse_signal(signal_path)
+
+    # No enforcement if wlmd is not running
+    if not levels:
+        print("[JES-gate] wlmd not detected — no enforcement, admitted",
+              file=sys.stderr)
+        os.execvp("bash", ["bash", "-c", args.command])
+
+    # Determine worst signal level
+    worst = get_worst_level(levels)
+    block_set = BLOCK_THRESHOLD.get(args.importance, {"black"})
+
+    if worst in block_set:
+        print(f"[JES-gate] BLOCKED: importance={args.importance}, "
+              f"worst_signal={worst}, block_threshold={block_set}",
+              file=sys.stderr)
+        sys.exit(1)
+
+    print(f"[JES-gate] ADMITTED: importance={args.importance}, "
+          f"worst_signal={worst}",
+          file=sys.stderr)
+
+    # Execute the actual command (replaces this process)
+    os.execvp("bash", ["bash", "-c", args.command])
+
+
+if __name__ == "__main__":
+    main()
