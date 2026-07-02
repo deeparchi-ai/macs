@@ -1,60 +1,102 @@
-# MACS — Multi-Agent Computing System
+# MACS — Multi-Agent Coordination System
 
-A thin **semantic-governance overlay** for existing multi-agent runtimes — **not a
-new platform**. MACS does not reinvent middleware (Kafka, Postgres, OpenTelemetry,
-durable-execution engines stay underneath); it adds the governance *semantics*
-those layers lack, drawn from sixty years of mainframe execution-model design
-(CICS, WLM, RACF, SMF/RMF, DUMP/SLIP, Parallel Sysplex).
+> **MACS is the Agent OS.** It provides the six subsystems every multi-agent
+> deployment needs — resource scheduling, access control, audit,
+> cross-validation, batch processing, and storage — plus a kernel that
+> enforces their decisions.
 
-The reference architecture has six dimensions: **security, scheduling, state,
-audit, observability, recoverability**. This repository is the reference
-implementation. See [`SPEC.md`](SPEC.md).
+MACS is modelled on [IBM z/OS](https://www.ibm.com/docs/en/zos). z/OS proved
+that a well-designed OS can host hundreds of concurrent programs, enforce
+security boundaries, audit every decision, and schedule resources by business
+importance — all in one address space. MACS applies the same architecture to
+agent systems.
 
-## v0: the Decision-Chain Dump (recoverability)
+## Architecture
+
+```
+Agent (sg-architect, do-developer...)
+        │
+        ▼
+┌───────────────────────────────┐
+│  MAEA Middleware (≈ CICS)     │
+│  Routing · Session · Lifecycle│
+└───────────────┬───────────────┘
+                │
+                ▼
+┌───────────────────────────────┐
+│  MACS Agent OS (≈ z/OS)       │
+│                               │
+│  ┌─────────┐ ┌─────────┐     │
+│  │ §2 WLM  │ │ §3 Sec  │ ... │
+│  │ 资源调度  │ │ 安全    │     │
+│  └─────────┘ └─────────┘     │
+│                               │
+│  Kernel: 仲裁 · 熔断 · 审计   │
+└───────────────────────────────┘
+```
+
+## Subsystems
+
+| Subsystem | What it does | IBM lineage | Status |
+|-----------|-------------|:-----------:|:------:|
+| **§2 WLM** | Goal-oriented resource scheduling (CPU + Token) | IBM WLM | ✅ CPU · 🚧 Token |
+| **§3 Security** | Access control + behavioral trust + hard constraints | RACF | ✅ |
+| **§4 Audit** | Immutable trace chain + decision receipts | SMF | ✅ |
+| **§5 XVal** | Dual-model cross-validation for subjective agents | *(Agent-native)* | 📋 |
+| **§6 JES** | Batch job scheduling + priority queues | JES2 | 📋 |
+| **§7 DFSMS** | Knowledge lifecycle + memory compression | DFSMS | 📋 |
+| **§8 VTAM** | Protocol admission + multi-transport | VTAM | 📋 |
+
+Five IBM transplants. One Agent-native (XVal — COBOL compiles; agent outputs
+don't).
+
+## Specification
+
+The canonical specification lives in the MAEA Framework repository:
+
+→ **[MACS Governance Specification](https://github.com/deeparchi-ai/MAEA-Framework/blob/main/specs/macs-governance-spec.md)** (v2.0)
+
+The spec is the single source of truth. This repository holds reference
+implementations of the subsystems.
+
+## Subsystem Repos
+
+| Subsystem | Implementation |
+|-----------|---------------|
+| §2 WLM | [deeparchi-ai/wlm](https://github.com/deeparchi-ai/wlm) — Go, cgroup v2 + PSI, 7 unit tests |
+| §4 Audit | [a2a-go PR #365](https://github.com/a2aproject/a2a-go/pull/365) — `a2aext/trace`, 10 unit tests |
+
+## v0 Artifact: Decision-Chain DUMP (now §4 Audit)
 
 > CICS DUMP/SLIP, for agents.
 
-Observer hooks are an always-on telemetry stream (like SMF/RMF "on by default").
-MACS-DUMP keeps a bounded, per-turn ring buffer and — the instant a **SLIP-style
-trigger** fires (tool fails N times, API error, latency over budget, abnormal
-finish reason, approval denied) — freezes the **entire decision chain** into a
-self-contained `macs.dump.v0` artifact: system prompt, full input messages, the
-complete LLM response, the tool-call sequence, the subagent tree, timings and
-resource/cost state. Logs tell you *what happened*; a dump preserves *what the
-world looked like at the instant it happened*.
-
-The dump format (`macs/dump/schema.json`) is the ownable interoperability
-contract — runtime-agnostic, so dumps are comparable across frameworks. A
-runtime *adapter* maps that runtime's events into the core; **Hermes is adapter #1**.
+The first MACS implementation was a recoverability tool: observer hooks that
+capture a per-turn ring buffer and, on trigger (tool failure, API error,
+latency over budget), freeze the entire decision chain into a self-contained
+`macs.dump.v0` artifact. This is now part of the **Audit subsystem (§4)**.
 
 ```
 macs/dump/
   model.py       # macs.dump.v0 artifact builder + schema constants
   schema.json    # JSON Schema (the interop contract)
   triggers.py    # SLIP-style predicate engine
-  collector.py   # per-turn ring buffer -> assemble dump on trigger
-  sinks.py       # file/jsonl (OTel later); all writes fail-open
+  collector.py   # per-turn ring buffer → assemble dump on trigger
+  sinks.py       # file/jsonl (all writes fail-open)
   adapters/
-    base.py      # record -> evaluate -> assemble -> write
-    hermes.py    # NousResearch/hermes-agent observer hooks -> core
-integrations/hermes-plugin/   # the droppable Hermes plugin (thin shell)
-examples/sample_dump.json     # a real artifact from a 3x-tool-timeout turn
+    hermes.py    # NousResearch/hermes-agent observer hooks → core
+integrations/hermes-plugin/   # drop-in Hermes plugin (stdlib-only)
 ```
 
-## Try it
+**Quick test:**
 
 ```bash
 python tests/test_triggers.py
 python tests/test_collector.py
-python tests/test_hermes_adapter.py   # end-to-end: fake ctx -> dump on disk
-# or, if pytest is installed:  pytest -q
+python tests/test_hermes_adapter.py
+# or: pytest -q
 ```
 
-## Use with Hermes
-
-`integrations/hermes-plugin/` is a **self-contained, stdlib-only** plugin (no
-`pip install`, no dependency on this package) — it's both the dogfood artifact and
-the upstream PR artifact:
+**Hermes install:**
 
 ```bash
 cp -r integrations/hermes-plugin  <hermes>/plugins/observability/macs_dump
@@ -62,17 +104,14 @@ hermes plugins enable observability/macs_dump
 # dumps land in ~/.hermes/macs-dump/<date>/  (+ index.jsonl)
 ```
 
-It subscribes **read-only** to observer hooks, never touches middleware — **zero
-core changes, fail-open** — and was verified against the installed Hermes
-**v0.16.0** (registers into the real `PluginManager`, fires through the real
-`invoke_hook`). The canonical multi-runtime core lives in `macs/dump/` and shares
-the `macs.dump.v0` schema with the vendored plugin.
+Zero core changes. Fail-open. Read-only observer hooks.
 
-Upstreaming notes, PR body and the #6741 comment draft:
-[`integrations/hermes-plugin/UPSTREAM.md`](integrations/hermes-plugin/UPSTREAM.md).
-Relates to Hermes #6741 (structured tracing) and #6642 (unified telemetry).
+## Related
 
-## Status & ownership
+- [MAEA Framework](https://github.com/deeparchi-ai/MAEA-Framework) — architecture + specs
+- [WLM](https://github.com/deeparchi-ai/wlm) — resource scheduler
+- [a2a-go](https://github.com/a2aproject/a2a-go) — A2A protocol Go SDK (+ trace)
 
-v0, reference implementation. © 2026 DeepArchi (Kuang Mi). MIT.
-Home: the **DeepArchi** GitHub org (`DeepArchi/macs`).
+---
+
+> *DeepArchi Team · 2026-07-03 · MIT License*
