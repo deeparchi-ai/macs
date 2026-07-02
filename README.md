@@ -65,6 +65,7 @@ implementations of the subsystems.
 |-----------|---------------|
 | §2 WLM | [deeparchi-ai/wlm](https://github.com/deeparchi-ai/wlm) — Go, cgroup v2 + PSI, 7 unit tests |
 | §4 Audit | [a2a-go PR #365](https://github.com/a2aproject/a2a-go/pull/365) — `a2aext/trace`, 10 unit tests |
+| §6 JES | [macs/integrations/jes-gate](integrations/jes-gate/) — WLM-aware cron admission control |
 
 ## v0 Artifact: Decision-Chain DUMP (now §4 Audit)
 
