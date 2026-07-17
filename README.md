@@ -50,8 +50,9 @@ agent systems.
 |:--:|-----------|-------------|:----------:|:------:|
 | §2 | **WLM** | Goal-oriented resource scheduling (CPU + Token) | IBM WLM | ✅ CPU · 🚧 Token |
 | §3 | **Security** | RACF-style access control + behavioral trust scoring | RACF | 📐 spec · ✅ v0.1 Go · 🚧 trust |
+| §3 | **State** | CICS Syncpoint — causal-DAG rollback + two-phase commit | CICS Syncpoint | ✅ v0.1 Go |
 | §4 | **Audit** | W3C traceparent audit trail + MCP records + cross-protocol bridge | SMF | ✅ trace · ✅ bridge · ✅ mcp-audit |
-| §5 | **XVal** | Dual-model cross-validation for subjective agents | *(agent-native)* | 📐 spec · 📋 impl |
+| §5 | **XVal** | Dual-model cross-validation for subjective agents | *(agent-native)* | 📐 spec · ✅ v0.1 Go |
 | §6 | **JES** | Batch job scheduling + priority admission | JES2 | ✅ jes-gate POC |
 | §7 | **DFSMS** | Knowledge lifecycle + memory compression | DFSMS | 📐 spec · 📋 impl |
 | §8 | **VTAM** | Protocol admission + multi-transport routing | VTAM | 📐 spec · 📋 impl |
@@ -74,9 +75,11 @@ propagation, cross-protocol bridge, implementation status, and 24-term glossary.
 |-----------|-----------|:-----:|
 | §2 WLM | [deeparchi-ai/wlm](https://github.com/deeparchi-ai/wlm) — Go, cgroup v2 + PSI | 34 |
 | §3 Security | [deeparchi-ai/macs-security-go](https://github.com/deeparchi-ai/macs-security-go) — RACF tool profiles | 13 |
+| §3 State | [deeparchi-ai/macs-state-go](https://github.com/deeparchi-ai/macs-state-go) — Causal-DAG rollback | 12 |
 | §4 Audit — Trace | [a2a-go PR #377](https://github.com/a2aproject/a2a-go/pull/377) — W3C traceparent | 20 |
 | §4 Audit — MCP | [deeparchi-ai/mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) — SEP #3004 | 10 |
 | §4 Audit — Bridge | [deeparchi-ai/trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) — A2A↔MCP | 19 |
+| §5 XVal | [deeparchi-ai/macs-xval-go](https://github.com/deeparchi-ai/macs-xval-go) — dual-model verification | 11 |
 | §6 JES | [macs/integrations/jes-gate](integrations/jes-gate/) — WLM-aware cron admission | — |
 
 ## Design Specs (pre-implementation)

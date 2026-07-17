@@ -53,8 +53,9 @@ MACS decomposes into eight subsystems mapped to IBM z/OS lineage:
 |:--:|-----------|:----------:|:------:|-----------|
 | §2 | **WLM** | IBM WLM | partial | [wlm](https://github.com/deeparchi-ai/wlm) v0.3.0 (34 tests), jes-gate |
 | §3 | **Security** | RACF | spec + v0.1 | [spec](specs/security-model.md), [macs-security-go](https://github.com/deeparchi-ai/macs-security-go) (13 tests) |
+| §3 | **State** | CICS Syncpoint | v0.1 | [macs-state-go](https://github.com/deeparchi-ai/macs-state-go) (12 tests) |
 | §4 | **Audit** | SMF | partial | [trace PR #377](https://github.com/a2aproject/a2a-go/pull/377) (20 tests), [mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) (10 tests), [trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) (19 tests), [bridge spec](trace-bridge/spec.md) |
-| §5 | **XVal** | *(agent-native)* | spec | [spec](specs/xval-dfsms-vtam.md) |
+| §5 | **XVal** | *(agent-native)* | v0.1 | [spec](specs/xval-dfsms-vtam.md), [macs-xval-go](https://github.com/deeparchi-ai/macs-xval-go) (11 tests) |
 | §6 | **JES** | JES2 | POC | jes-gate (4 scenarios) |
 | §7 | **DFSMS** | DFSMS | spec | [spec](specs/xval-dfsms-vtam.md) |
 | §8 | **VTAM** | VTAM | spec | [spec](specs/xval-dfsms-vtam.md) |
