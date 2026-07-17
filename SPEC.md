@@ -15,9 +15,9 @@ MACS is an **overlay**, not a platform.
 
 | # | Dimension | Mainframe origin | Ecosystem gap | Impl status |
 |---|-----------|------------------|---------------|-------------|
-| 1 | Security model | RACF dataset/field-level | tool/param-level only | planned |
+| 1 | Security model | RACF dataset/field-level | tool/param-level only | spec (security-model.md) |
 | 2 | Scheduling | WLM goal-driven SLA, CICS Dispatcher queues | FIFO / static priority | partial (wlm v0.3.0) |
-| 3 | State | CICS Syncpoint, CICSPlex cross-region, DB2 Data Sharing | linear checkpoint / time-travel, no causal-DAG rollback | planned |
+| 3 | State | CICS Syncpoint, CICSPlex cross-region, DB2 Data Sharing | linear checkpoint / time-travel, no causal-DAG rollback | spec (state-rollback.md) |
 | 4 | Audit & governance | SMF | trace-level only | partial (dump+jES+audit-go) |
 | 5 | Observability | SMF/RMF zero-config full capture | sampling traces | partial (via dump) |
 | 6 | **Recoverability** | **DUMP + SLIP conditional capture** | **absent industry-wide** | **v0 — this repo** |
@@ -53,3 +53,11 @@ MACS is an **overlay**, not a platform.
 | [deeparchi-ai/trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) | A2A↔MCP trace context bridge | §4 Audit | 19 tests |
 | `macs/integrations/jes-gate/` | WLM-aware cron admission control (Hermes plugin) | §2 Scheduling | In-tree |
 | [trace-bridge spec](trace-bridge/spec.md) | Cross-protocol trace propagation v0.1 | §4 Audit | 429 lines, 4 conformance vectors |
+
+## Design specs (pre-implementation)
+
+| Spec | MACS dimension | Lines |
+|------|:---:|------|
+| [security-model.md](specs/security-model.md) | §1 RACF security | ~350 |
+| [state-rollback.md](specs/state-rollback.md) | §3 Causal-DAG rollback | ~350 |
+| [xval-dfsms-vtam.md](specs/xval-dfsms-vtam.md) | §5/§7/§8 XVal, DFSMS, VTAM | ~350 |
