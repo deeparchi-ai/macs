@@ -1,9 +1,9 @@
 # MACS — Multi-Agent Coordination System
 
-> **MACS is the Agent OS.** It provides the six subsystems every multi-agent
+> **MACS is the Agent OS.** It provides the eight subsystems every multi-agent
 > deployment needs — resource scheduling, access control, audit,
-> cross-validation, batch processing, and storage — plus a kernel that
-> enforces their decisions.
+> cross-validation, batch processing, knowledge management, and network
+> admission — plus a kernel that enforces their decisions.
 
 MACS is modelled on [IBM z/OS](https://www.ibm.com/docs/en/zos). z/OS proved
 that a well-designed OS can host hundreds of concurrent programs, enforce
@@ -14,68 +14,87 @@ agent systems.
 ## Architecture
 
 ```
-Agent (sg-architect, do-developer...)
-        │
-        ▼
-┌───────────────────────────────┐
-│  MAEA Middleware (≈ CICS)     │
-│  Routing · Session · Lifecycle│
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│  MACS Agent OS (≈ z/OS)       │
-│                               │
-│  ┌─────────┐ ┌─────────┐     │
-│  │ §2 WLM  │ │ §3 Sec  │ ... │
-│  │ Resource│ │ Access │     │
-│  │ Scheduler│ │Control │     │
-│  └─────────┘ └─────────┘     │
-│                               │
-│  Kernel: Arbiter · Brake · Audit │
-└───────────────────────────────┘
+                         ┌─────────────────┐
+                         │   §8 VTAM       │
+                         │ Protocol        │
+                         │ Admission       │
+                         └────────┬────────┘
+         ┌────────────────────────┼────────────────────────┐
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   §2 WLM        │    │   §3 Security    │    │   §6 JES        │
+│ Resource        │    │ Access Control   │    │ Batch           │
+│ Scheduling      │    │ + Trust Scoring  │    │ Scheduling      │
+└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
+         │                      │                      │
+         ▼                      ▼                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                    MACS Kernel                           │
+└────────────┬────────────────────────────────────┬───────┘
+             ▼                                    ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│   §5 XVal           │              │   §4 Audit (SMF)    │
+│ Cross-Validation    │              │ Immutable Trail     │
+└─────────────────────┘              └─────────────────────┘
+                                                │
+                                                ▼
+                                    ┌─────────────────────┐
+                                    │   §7 DFSMS          │
+                                    │ Knowledge Lifecycle │
+                                    └─────────────────────┘
 ```
 
 ## Subsystems
 
-| Subsystem | What it does | IBM lineage | Status |
-|-----------|-------------|:-----------:|:------:|
-| **§2 WLM** | Goal-oriented resource scheduling (CPU + Token) | IBM WLM | ✅ CPU · 🚧 Token |
-| **§3 Security** | Access control + behavioral trust + hard constraints | RACF | ✅ |
-| **§4 Audit** | Immutable trace chain + decision receipts | SMF | ✅ |
-| **§5 XVal** | Dual-model cross-validation for subjective agents | *(Agent-native)* | 📋 |
-| **§6 JES** | Batch job scheduling + priority queues | JES2 | 📋 |
-| **§7 DFSMS** | Knowledge lifecycle + memory compression | DFSMS | 📋 |
-| **§8 VTAM** | Protocol admission + multi-transport | VTAM | 📋 |
+| # | Subsystem | What it does | IBM lineage | Status |
+|:--:|-----------|-------------|:----------:|:------:|
+| §2 | **WLM** | Goal-oriented resource scheduling (CPU + Token) | IBM WLM | ✅ CPU · 🚧 Token |
+| §3 | **Security** | RACF-style access control + behavioral trust scoring | RACF | 📐 spec · ✅ v0.1 Go · 🚧 trust |
+| §4 | **Audit** | W3C traceparent audit trail + MCP records + cross-protocol bridge | SMF | ✅ trace · ✅ bridge · ✅ mcp-audit |
+| §5 | **XVal** | Dual-model cross-validation for subjective agents | *(agent-native)* | 📐 spec · 📋 impl |
+| §6 | **JES** | Batch job scheduling + priority admission | JES2 | ✅ jes-gate POC |
+| §7 | **DFSMS** | Knowledge lifecycle + memory compression | DFSMS | 📐 spec · 📋 impl |
+| §8 | **VTAM** | Protocol admission + multi-transport routing | VTAM | 📐 spec · 📋 impl |
 
-Five IBM transplants. One Agent-native (XVal — COBOL compiles; agent outputs
-don't).
+Five IBM transplants. Three Agent-native additions (XVal — COBOL programs don't hallucinate;
+DFSMS knowledge semantics — confidence/superseded_by; VTAM — A2A/MCP/Feishu coexistence).
 
 ## Specification
 
-The canonical specification lives in the MAEA Framework repository:
+The canonical specification is in the MAEA Framework repository:
 
-→ **[MACS Governance Specification](https://github.com/deeparchi-ai/MAEA-Framework/blob/main/specs/macs-governance-spec.md)** (v2.0)
+→ **[MACS Governance Specification v2.1](https://github.com/deeparchi-ai/MAEA-Framework/blob/main/specs/macs-governance-spec.md)**
 
-The spec is the single source of truth. This repository holds reference
-implementations of the subsystems.
+The governance spec includes the subsystem topology, failure model, W3C traceparent
+propagation, cross-protocol bridge, implementation status, and 24-term glossary.
 
-## Subsystem Repos
+## Implementation Repos
 
-| Subsystem | Implementation |
-|-----------|---------------|
-| §2 WLM | [deeparchi-ai/wlm](https://github.com/deeparchi-ai/wlm) — Go, cgroup v2 + PSI, 7 unit tests |
-| §4 Audit | [a2a-go PR #365](https://github.com/a2aproject/a2a-go/pull/365) — `a2aext/trace`, 10 unit tests |
-| §6 JES | [macs/integrations/jes-gate](integrations/jes-gate/) — WLM-aware cron admission control |
+| Subsystem | Repository | Tests |
+|-----------|-----------|:-----:|
+| §2 WLM | [deeparchi-ai/wlm](https://github.com/deeparchi-ai/wlm) — Go, cgroup v2 + PSI | 34 |
+| §3 Security | [deeparchi-ai/macs-security-go](https://github.com/deeparchi-ai/macs-security-go) — RACF tool profiles | 13 |
+| §4 Audit — Trace | [a2a-go PR #377](https://github.com/a2aproject/a2a-go/pull/377) — W3C traceparent | 20 |
+| §4 Audit — MCP | [deeparchi-ai/mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) — SEP #3004 | 10 |
+| §4 Audit — Bridge | [deeparchi-ai/trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) — A2A↔MCP | 19 |
+| §6 JES | [macs/integrations/jes-gate](integrations/jes-gate/) — WLM-aware cron admission | — |
 
-## v0 Artifact: Decision-Chain DUMP (now §4 Audit)
+## Design Specs (pre-implementation)
+
+| Spec | Subsystem | 
+|------|:---:|
+| [security-model.md](specs/security-model.md) | §3 Tool profiles, param scopes, program pathing |
+| [state-rollback.md](specs/state-rollback.md) | §3 Causal-DAG rollback + two-phase commit |
+| [xval-dfsms-vtam.md](specs/xval-dfsms-vtam.md) | §5 XVal · §7 DFSMS · §8 VTAM |
+| [trace-bridge/spec.md](trace-bridge/spec.md) | §4 A2A↔MCP trace context bridge (429 lines) |
+
+## v0 Artifact: Decision-Chain DUMP
 
 > CICS DUMP/SLIP, for agents.
 
-The first MACS implementation was a recoverability tool: observer hooks that
-capture a per-turn ring buffer and, on trigger (tool failure, API error,
-latency over budget), freeze the entire decision chain into a self-contained
-`macs.dump.v0` artifact. This is now part of the **Audit subsystem (§4)**.
+The first MACS implementation: observer hooks that capture a per-turn ring buffer
+and, on trigger (tool failure, API error, latency over budget), freeze the entire
+decision chain into a self-contained `macs.dump.v0` artifact.
 
 ```
 macs/dump/
@@ -85,7 +104,7 @@ macs/dump/
   collector.py   # per-turn ring buffer → assemble dump on trigger
   sinks.py       # file/jsonl (all writes fail-open)
   adapters/
-    hermes.py    # NousResearch/hermes-agent observer hooks → core
+    hermes.py    # Hermes agent observer hooks → core
 integrations/hermes-plugin/   # drop-in Hermes plugin (stdlib-only)
 ```
 
@@ -108,12 +127,18 @@ hermes plugins enable observability/macs_dump
 
 Zero core changes. Fail-open. Read-only observer hooks.
 
+## Non-Goals
+
+- Not a new runtime/platform; no cluster to operate.
+- Does not capture raw internal objects — captures the sanitized telemetry view.
+- Upstream plugin stays self-contained / zero-dependency for mergeability.
+
 ## Related
 
-- [MAEA Framework](https://github.com/deeparchi-ai/MAEA-Framework) — architecture + specs
+- [MAEA Framework](https://github.com/deeparchi-ai/MAEA-Framework) — architecture + canonical spec
 - [WLM](https://github.com/deeparchi-ai/wlm) — resource scheduler
 - [a2a-go](https://github.com/a2aproject/a2a-go) — A2A protocol Go SDK (+ trace)
 
 ---
 
-> *DeepArchi Team · 2026-07-03 · MIT License*
+> *DeepArchi Team · 2026-07-18 · MIT License*

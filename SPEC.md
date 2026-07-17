@@ -1,7 +1,8 @@
-# MACS Reference Architecture (spec pointer)
+# MACS Reference Architecture — Quick Reference
 
-Full narrative: *MACS — 企业级多 Agent 架构该长什么样* (DeepArchi · 邝谧).
-This file scopes what the reference implementation covers.
+Full specification: [MACS Governance Specification v2.1](https://github.com/deeparchi-ai/MAEA-Framework/blob/main/specs/macs-governance-spec.md)
+(MAEA Framework). This file provides an implementation-status summary for the
+eight MACS subsystems.
 
 ## Premise
 
@@ -11,53 +12,76 @@ bigger cluster — it's a governance layer that ports mainframe execution-model
 principles onto distributed infrastructure, plus agent-native protocols (A2A).
 MACS is an **overlay**, not a platform.
 
-## Six dimensions (eval framework + build targets)
+## Eight Subsystems
 
-| # | Dimension | Mainframe origin | Ecosystem gap | Impl status |
-|---|-----------|------------------|---------------|-------------|
-| 1 | Security model | RACF dataset/field-level | tool/param-level only | spec (security-model.md) |
-| 2 | Scheduling | WLM goal-driven SLA, CICS Dispatcher queues | FIFO / static priority | partial (wlm v0.3.0) |
-| 3 | State | CICS Syncpoint, CICSPlex cross-region, DB2 Data Sharing | linear checkpoint / time-travel, no causal-DAG rollback | spec (state-rollback.md) |
-| 4 | Audit & governance | SMF | trace-level only | partial (dump+jES+audit-go) |
-| 5 | Observability | SMF/RMF zero-config full capture | sampling traces | partial (via dump) |
-| 6 | **Recoverability** | **DUMP + SLIP conditional capture** | **absent industry-wide** | **v0 — this repo** |
+MACS decomposes into eight subsystems mapped to IBM z/OS lineage:
 
-## v0 scope: Decision-Chain Dump
+```
+                         ┌─────────────────┐
+                         │   §8 VTAM       │
+                         │ Protocol        │
+                         │ Admission       │
+                         └────────┬────────┘
+         ┌────────────────────────┼────────────────────────┐
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   §2 WLM        │    │   §3 Security    │    │   §6 JES        │
+│ Resource        │    │ Access Control   │    │ Batch           │
+│ Scheduling      │    │ + Trust Scoring  │    │ Scheduling      │
+└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
+         │                      │                      │
+         ▼                      ▼                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                    MACS Kernel                           │
+└────────────┬────────────────────────────────────┬───────┘
+             ▼                                    ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│   §5 XVal           │              │   §4 Audit (SMF)    │
+│ Cross-Validation    │              │ Immutable Trail     │
+└─────────────────────┘              └─────────────────────┘
+                                                │
+                                                ▼
+                                    ┌─────────────────────┐
+                                    │   §7 DFSMS          │
+                                    │ Knowledge Lifecycle │
+                                    └─────────────────────┘
+```
+
+## Implementation Status
+
+| # | Subsystem | IBM lineage | Status | Artifacts |
+|:--:|-----------|:----------:|:------:|-----------|
+| §2 | **WLM** | IBM WLM | partial | [wlm](https://github.com/deeparchi-ai/wlm) v0.3.0 (34 tests), jes-gate |
+| §3 | **Security** | RACF | spec + v0.1 | [spec](specs/security-model.md), [macs-security-go](https://github.com/deeparchi-ai/macs-security-go) (13 tests) |
+| §4 | **Audit** | SMF | partial | [trace PR #377](https://github.com/a2aproject/a2a-go/pull/377) (20 tests), [mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) (10 tests), [trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) (19 tests), [bridge spec](trace-bridge/spec.md) |
+| §5 | **XVal** | *(agent-native)* | spec | [spec](specs/xval-dfsms-vtam.md) |
+| §6 | **JES** | JES2 | POC | jes-gate (4 scenarios) |
+| §7 | **DFSMS** | DFSMS | spec | [spec](specs/xval-dfsms-vtam.md) |
+| §8 | **VTAM** | VTAM | spec | [spec](specs/xval-dfsms-vtam.md) |
+
+## §3 State & Rollback (Cross-Cutting)
+
+State management (CICS Syncpoint, causal-DAG rollback) is a cross-cutting
+concern spanning Security (§3) and Audit (§4). Design spec:
+[state-rollback.md](specs/state-rollback.md).
+
+## v0 Artifact: Decision-Chain DUMP
 
 - **Trigger engine** (`triggers.py`) = SLIP traps: `tool_error`, `tool_repeat_fail`,
-  `api_error`, `latency`, `finish_anomaly`, `approval_denied`; extensible
-  (`semantic_validation_fail` reserved). Escalation Turn DUMP → Session DUMP
-  (Session-level aggregation reserved for v0.x).
+  `api_error`, `latency`, `finish_anomaly`, `approval_denied`; extensible.
 - **Artifact** (`macs.dump.v0`, `schema.json`) = Transaction-DUMP analog:
-  correlation IDs, Working Storage (system prompt + input), full LLM response,
-  tool-call sequence, subagent tree, Task-Control-Block (timings/resources/retries),
-  env.
+  correlation IDs, Working Storage, full LLM response, tool-call sequence,
+  subagent tree, Task-Control-Block.
 - **Collector** = bounded + TTL'd per-turn ring buffer; evicted on session end.
 - **Adapter** = runtime → core event normalization. Hermes first.
 - **Invariant**: fail-open everywhere — MACS must never break the host agent.
 
-## Non-goals (red lines)
+## Non-Goals (Red Lines)
 
 - Not a new runtime/platform; no cluster to operate.
-- Does not capture raw internal objects/memory — it captures the **sanitized
-  telemetry view** the runtime already emits (an archival, compliance-friendly
-  property, not a limitation to hide).
+- Does not capture raw internal objects — captures the sanitized telemetry view.
 - Upstream plugin stays self-contained / zero-dependency for mergeability.
 
-## Companion repos
+---
 
-| Repo | Role | MACS dimension | Status |
-|------|------|:---:|:---:|
-| [deeparchi-ai/wlm](https://github.com/deeparchi-ai/wlm) | Goal-driven scheduling, cgroup v2+PSI, Token budget | §2 Scheduling | v0.3.0, 34 tests |
-| [deeparchi-ai/mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) | MCP SEP #3004 audit record — canonical form + hash chain | §4 Audit | 10 tests, cross-lang KAT match |
-| [deeparchi-ai/trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) | A2A↔MCP trace context bridge | §4 Audit | 19 tests |
-| `macs/integrations/jes-gate/` | WLM-aware cron admission control (Hermes plugin) | §2 Scheduling | In-tree |
-| [trace-bridge spec](trace-bridge/spec.md) | Cross-protocol trace propagation v0.1 | §4 Audit | 429 lines, 4 conformance vectors |
-
-## Design specs (pre-implementation)
-
-| Spec | MACS dimension | Lines |
-|------|:---:|------|
-| [security-model.md](specs/security-model.md) | §1 RACF security | ~350 |
-| [state-rollback.md](specs/state-rollback.md) | §3 Causal-DAG rollback | ~350 |
-| [xval-dfsms-vtam.md](specs/xval-dfsms-vtam.md) | §5/§7/§8 XVal, DFSMS, VTAM | ~350 |
+*DeepArchi · 深度架构 · 2026-07-18*
