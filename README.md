@@ -14,15 +14,15 @@ Canonical specification: [MACS Governance Specification v3.0](https://github.com
 | §3 | **Sanctum** | Access control + trust scoring + hard constraints | RACF | ✅ v0.1 Go · 🚧 trust |
 | §3b | **Loom** | Causal-DAG rollback + two-phase commit | CICS | ✅ v0.1 Go |
 | §4 | **Chronicle** | Audit trail + W3C trace + cross-protocol bridge | SMF | ✅ 4 components |
-| §5 | **XVal** | **Tri-model** cross-validation + vendor failover | *(native)* | 🚧 v0.1 → tri-model |
+| §5 | **XVal** | **Tri-model** cross-validation + vendor failover | *(native)* | ✅ v0.2 tri-model |
 | §6 | **Cadence** | Batch scheduling + job output management | JES2+SDSF | ✅ POC |
 | §7 | **Curator** | Knowledge lifecycle + compression + backup | DFSMS+dss | ✅ v0.1 Go |
 | §8 | **Nexus** | Protocol admission + multi-transport routing | VTAM | ✅ v0.1 Go |
-| §9 | **Gauge** | Performance metrics + cross-vendor health | RMF+NetView | 📋 spec |
-| §10 | **Seal** | Identity registry + certificates + signatures | ICSF | 📋 spec |
-| §11 | **Relay** | Cluster state + shared state + broadcast | XCF | 📋 spec |
-| §12 | **Warden** | Crash recovery + policy ops + escalation | ARM+SysAuto | 📋 spec |
-| §13 | **Pulse** | MACS self-health + startup consistency | HC | 📋 spec |
+| §9 | **Gauge** | Performance metrics + cross-vendor health | RMF+NetView | ✅ v0.1 Go |
+| §10 | **Seal** | Identity registry + certificates + signatures | ICSF | ✅ v0.1 Go |
+| §11 | **Relay** | Cluster state + shared state + broadcast | XCF | ✅ v0.1 Go |
+| §12 | **Warden** | Crash recovery + policy ops + escalation | ARM+SysAuto | ✅ v0.1 Go |
+| §13 | **Pulse** | MACS self-health + startup consistency | HC | ✅ v0.1 Go |
 
 ## Implementation Repos
 
@@ -32,10 +32,15 @@ Canonical specification: [MACS Governance Specification v3.0](https://github.com
 | §3 | [macs-sanctum-go](https://github.com/deeparchi-ai/macs-sanctum-go) | 13 |
 | §3b | [macs-loom-go](https://github.com/deeparchi-ai/macs-loom-go) | 12 |
 | §4 | [a2a-go PR #377](https://github.com/a2aproject/a2a-go/pull/377) + [mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) + [chronicle-bridge-go](https://github.com/deeparchi-ai/macs-chronicle-bridge-go) + DUMP | 68 |
-| §5 | [macs-xval-go](https://github.com/deeparchi-ai/macs-xval-go) | 11 |
+| §5 | [macs-xval-go](https://github.com/deeparchi-ai/macs-xval-go) | 31 |
 | §6 | [jes-gate](integrations/jes-gate/) | 4 |
 | §7 | [macs-curator-go](https://github.com/deeparchi-ai/macs-curator-go) | 13 |
 | §8 | [macs-nexus-go](https://github.com/deeparchi-ai/macs-nexus-go) | 16 |
+| §9 | [macs-gauge-go](https://github.com/deeparchi-ai/macs-gauge-go) | 20 |
+| §10 | [macs-seal-go](https://github.com/deeparchi-ai/macs-seal-go) | 19 |
+| §11 | [macs-relay-go](https://github.com/deeparchi-ai/macs-relay-go) | 15 |
+| §12 | [macs-warden-go](https://github.com/deeparchi-ai/macs-warden-go) | 12 |
+| §13 | [macs-pulse-go](https://github.com/deeparchi-ai/macs-pulse-go) | 10 |
 
 ## Design Specs
 
