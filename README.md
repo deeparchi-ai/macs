@@ -54,8 +54,8 @@ agent systems.
 | §4 | **Audit** | W3C traceparent audit trail + MCP records + cross-protocol bridge | SMF | ✅ trace · ✅ bridge · ✅ mcp-audit |
 | §5 | **XVal** | Dual-model cross-validation for subjective agents | *(agent-native)* | 📐 spec · ✅ v0.1 Go |
 | §6 | **JES** | Batch job scheduling + priority admission | JES2 | ✅ jes-gate POC |
-| §7 | **DFSMS** | Knowledge lifecycle + memory compression | DFSMS | 📐 spec · 📋 impl |
-| §8 | **VTAM** | Protocol admission + multi-transport routing | VTAM | 📐 spec · 📋 impl |
+| §7 | **DFSMS** | Knowledge lifecycle + memory compression | DFSMS | ✅ v0.1 Go |
+| §8 | **VTAM** | Protocol admission + multi-transport routing | VTAM | ✅ v0.1 Go |
 
 Five IBM transplants. Three Agent-native additions (XVal — COBOL programs don't hallucinate;
 DFSMS knowledge semantics — confidence/superseded_by; VTAM — A2A/MCP/Feishu coexistence).
@@ -81,6 +81,8 @@ propagation, cross-protocol bridge, implementation status, and 24-term glossary.
 | §4 Audit — Bridge | [deeparchi-ai/trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) — A2A↔MCP | 19 |
 | §5 XVal | [deeparchi-ai/macs-xval-go](https://github.com/deeparchi-ai/macs-xval-go) — dual-model verification | 11 |
 | §6 JES | [macs/integrations/jes-gate](integrations/jes-gate/) — WLM-aware cron admission | — |
+| §7 DFSMS | [deeparchi-ai/macs-dfsms-go](https://github.com/deeparchi-ai/macs-dfsms-go) — tiered context lifecycle | 13 |
+| §8 VTAM | [deeparchi-ai/macs-vtam-go](https://github.com/deeparchi-ai/macs-vtam-go) — transport routing + admission | 16 |
 
 ## Design Specs (pre-implementation)
 

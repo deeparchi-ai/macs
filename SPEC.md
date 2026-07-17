@@ -57,8 +57,8 @@ MACS decomposes into eight subsystems mapped to IBM z/OS lineage:
 | §4 | **Audit** | SMF | partial | [trace PR #377](https://github.com/a2aproject/a2a-go/pull/377) (20 tests), [mcp-audit-go](https://github.com/deeparchi-ai/mcp-audit-go) (10 tests), [trace-bridge-go](https://github.com/deeparchi-ai/trace-bridge-go) (19 tests), [bridge spec](trace-bridge/spec.md) |
 | §5 | **XVal** | *(agent-native)* | v0.1 | [spec](specs/xval-dfsms-vtam.md), [macs-xval-go](https://github.com/deeparchi-ai/macs-xval-go) (11 tests) |
 | §6 | **JES** | JES2 | POC | jes-gate (4 scenarios) |
-| §7 | **DFSMS** | DFSMS | spec | [spec](specs/xval-dfsms-vtam.md) |
-| §8 | **VTAM** | VTAM | spec | [spec](specs/xval-dfsms-vtam.md) |
+| §7 | **DFSMS** | DFSMS | v0.1 | [spec](specs/xval-dfsms-vtam.md), [macs-dfsms-go](https://github.com/deeparchi-ai/macs-dfsms-go) (13 tests) |
+| §8 | **VTAM** | VTAM | v0.1 | [spec](specs/xval-dfsms-vtam.md), [macs-vtam-go](https://github.com/deeparchi-ai/macs-vtam-go) (16 tests) |
 
 ## §3 State & Rollback (Cross-Cutting)
 
