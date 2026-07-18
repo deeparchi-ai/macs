@@ -3,7 +3,7 @@
 Full specification: [MACS Governance Specification v3.0](https://github.com/deeparchi-ai/MAEA-Framework/blob/main/specs/macs-governance-spec.md)
 (MAEA Framework). Canonical source of truth.
 
-## Thirteen Subsystems
+## Fourteen Subsystems
 
 | § | Name | z/OS | Status | Artifacts |
 |:--:|------|:---:|:------:|-----------|
@@ -20,6 +20,7 @@ Full specification: [MACS Governance Specification v3.0](https://github.com/deep
 | §11 | **Relay** | XCF | v0.1 | [relay-go](https://github.com/deeparchi-ai/macs-relay-go) (15 tests) |
 | §12 | **Warden** | ARM | v0.1 | [warden-go](https://github.com/deeparchi-ai/macs-warden-go) (12 tests) |
 | §13 | **Pulse** | HC | v0.1 | [pulse-go](https://github.com/deeparchi-ai/macs-pulse-go) (10 tests) |
+| §14 | **Console** | TSO+ISPF | spec | — |
 
 ## Non-Goals
 
