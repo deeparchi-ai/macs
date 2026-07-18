@@ -23,7 +23,7 @@ Canonical specification: [MACS Governance Specification v3.0](https://github.com
 | §11 | **Relay** | Cluster state + shared state + broadcast | XCF | ✅ v0.1 Go |
 | §12 | **Warden** | Crash recovery + policy ops + escalation | ARM+SysAuto | ✅ v0.1 Go |
 | §13 | **Pulse** | MACS self-health + startup consistency | HC | ✅ v0.1 Go |
-| §14 | **Console** | Operator control plane — TSO+ISPF | TSO+ISPF | 📋 spec |
+| §14 | **Console** | Operator control plane — TSO+ISPF | TSO+ISPF | ✅ v0.1 Go |
 
 ## Implementation Repos
 
@@ -42,7 +42,7 @@ Canonical specification: [MACS Governance Specification v3.0](https://github.com
 | §11 | [macs-relay-go](https://github.com/deeparchi-ai/macs-relay-go) | 15 |
 | §12 | [macs-warden-go](https://github.com/deeparchi-ai/macs-warden-go) | 12 |
 | §13 | [macs-pulse-go](https://github.com/deeparchi-ai/macs-pulse-go) | 10 |
-| §14 | [macs-console-go](https://github.com/deeparchi-ai/macs-console-go) | — |
+| §14 | [macs-console-go](https://github.com/deeparchi-ai/macs-console-go) | 36 |
 
 ## Design Specs
 
