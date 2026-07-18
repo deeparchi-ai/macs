@@ -1,6 +1,6 @@
 # MACS — Multi-Agent Coordination System
 
-> **MACS is the Agent OS.** Thirteen subsystems — from resource regulation to
+> **MACS is the Agent OS.** Fourteen subsystems — from resource regulation to
 > tri-model cross-validation to crash recovery — modelled on IBM z/OS, built
 > for multi-agent networks.
 
@@ -8,22 +8,22 @@ Canonical specification: [MACS Governance Specification v3.0](https://github.com
 
 ## Subsystems
 
-| § | Name | Role | z/OS | Status |
-|:--:|------|------|:---:|:------:|
-| §2 | **Regulator** | Goal scheduling + token budget + model failover | WLM | ✅ CPU · 🚧 Token |
-| §3 | **Sanctum** | Access control + trust scoring + hard constraints | RACF | ✅ v0.1 Go · 🚧 trust |
-| §3b | **Loom** | Causal-DAG rollback + two-phase commit | CICS | ✅ v0.1 Go |
-| §4 | **Chronicle** | Audit trail + W3C trace + cross-protocol bridge | SMF | ✅ 4 components |
-| §5 | **XVal** | **Tri-model** cross-validation + vendor failover | *(native)* | ✅ v0.2 tri-model |
-| §6 | **Cadence** | Batch scheduling + job output management | JES2+SDSF | ✅ POC |
-| §7 | **Curator** | Knowledge lifecycle + compression + backup | DFSMS+dss | ✅ v0.1 Go |
-| §8 | **Nexus** | Protocol admission + multi-transport routing | VTAM | ✅ v0.1 Go |
-| §9 | **Gauge** | Performance metrics + cross-vendor health | RMF+NetView | ✅ v0.1 Go |
-| §10 | **Seal** | Identity registry + certificates + signatures | ICSF | ✅ v0.1 Go |
-| §11 | **Relay** | Cluster state + shared state + broadcast | XCF | ✅ v0.1 Go |
-| §12 | **Warden** | Crash recovery + policy ops + escalation | ARM+SysAuto | ✅ v0.1 Go |
-| §13 | **Pulse** | MACS self-health + startup consistency | HC | ✅ v0.1 Go |
-| §14 | **Console** | Operator control plane — TSO+ISPF | TSO+ISPF | ✅ v0.1 Go |
+| § | Name | Role | IBM z/OS | Status |
+|:--:|------|------|-----------|:------:|
+| §2 | **Regulator** | Goal scheduling + token budget + model failover | WLM — Workload Manager | ✅ CPU · 🚧 Token |
+| §3 | **Sanctum** | Access control + trust scoring + hard constraints | RACF — Resource Access Control Facility | ✅ v0.1 Go · 🚧 trust |
+| §3b | **Loom** | Causal-DAG rollback + two-phase commit | CICS Syncpoint | ✅ v0.1 Go |
+| §4 | **Chronicle** | Audit trail + W3C trace + cross-protocol bridge | SMF — System Management Facilities | ✅ 4 components |
+| §5 | **XVal** | **Tri-model** cross-validation + vendor failover | *(agent-native, no IBM lineage)* | ✅ v0.2 tri-model |
+| §6 | **Cadence** | Batch scheduling + job output management | JES2 — Job Entry Subsystem + SDSF | ✅ POC |
+| §7 | **Curator** | Knowledge lifecycle + compression + backup | DFSMS — Data Facility Storage Management Subsystem + DFSMSdss | ✅ v0.1 Go |
+| §8 | **Nexus** | Protocol admission + multi-transport routing | VTAM — Virtual Telecommunications Access Method | ✅ v0.1 Go |
+| §9 | **Gauge** | Performance metrics + cross-vendor health | RMF — Resource Measurement Facility + NetView | ✅ v0.1 Go |
+| §10 | **Seal** | Identity registry + certificates + signatures | ICSF — Integrated Cryptographic Service Facility | ✅ v0.1 Go |
+| §11 | **Relay** | Cluster state + shared state + broadcast | XCF — Cross-system Coupling Facility | ✅ v0.1 Go |
+| §12 | **Warden** | Crash recovery + policy ops + escalation | ARM — Automatic Restart Manager + System Automation | ✅ v0.1 Go |
+| §13 | **Pulse** | MACS self-health + startup consistency | Health Checker | ✅ v0.1 Go |
+| §14 | **Console** | Operator control plane | TSO — Time Sharing Option + ISPF — Interactive System Productivity Facility | ✅ v0.1 Go |
 
 ## Implementation Repos
 
