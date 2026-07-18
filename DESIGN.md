@@ -64,6 +64,10 @@ MACS is designed for single OPC deployment (one person, N agents). Multi-tenant 
 | Storage | SQLite (v1) → PostgreSQL (v2) | Single binary, zero config for OPC |
 | Deployment | Docker Compose | One command: `docker compose up -d` |
 
+## Architecture Decisions
+
+All significant architecture decisions are recorded as ADRs in [`decisions/`](decisions/). See [ADR-006](decisions/ADR-006-maea-macs-decoupling.md) for the MAEA framework ↔ MACS implementation decoupling policy.
+
 ## Roadmap
 
 | Version | Scope |
