@@ -4,7 +4,7 @@ dispatcher (fail-open, injects telemetry_schema_version), asserting a dump
 artifact is produced.
 
 Run with the Hermes venv python, e.g.:
-    /home/kuang/.hermes/hermes-agent/venv/bin/python tests/integration_hermes_real.py
+    /home/user/.hermes/hermes-agent/venv/bin/python tests/integration_hermes_real.py
 
 Skips (exit 0) if the Hermes plugin system isn't importable, so it's portable.
 """
@@ -15,7 +15,7 @@ import shutil
 import sys
 import tempfile
 
-HERMES = os.environ.get("HERMES_ROOT", "/home/kuang/.hermes/hermes-agent")
+HERMES = os.environ.get("HERMES_ROOT", "/home/user/.hermes/hermes-agent")
 MACS = os.environ.get("MACS_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 for _p in (MACS, HERMES):
     if _p not in sys.path:

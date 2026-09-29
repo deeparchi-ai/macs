@@ -6,7 +6,7 @@ import json
 import os
 import sys
 
-HERMES = "/home/kuang/.hermes/hermes-agent"
+HERMES = "/home/user/.hermes/hermes-agent"
 if HERMES not in sys.path:
     sys.path.insert(0, HERMES)
 
