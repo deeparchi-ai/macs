@@ -2,7 +2,7 @@
 
 **Status:** Draft (v0.1)
 **Date:** 2026-08-03
-**Author:** kuangmi (kuangmi@deeparchi.com.cn)
+**Author:** user (user@example.com)
 **Subsystem:** §7 Curator (DFSMS lineage)
 **Companion repo:** [macs-curator-go](https://github.com/deeparchi-ai/macs-curator-go)
 **Inspired by:** [QM skill governance](https://github.com/yc-software/qm) — scope-owned skills, share-by-grant, admin-gated promotion, git-based skill packs

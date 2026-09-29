@@ -2,7 +2,7 @@
 
 **Status:** Draft (v0.1)
 **Date:** 2026-08-03
-**Author:** kuangmi (kuangmi@deeparchi.com.cn)
+**Author:** user (user@example.com)
 **Subsystem:** §8 Nexus (VTAM lineage)
 **Companion repo:** [macs-nexus-go](https://github.com/deeparchi-ai/macs-nexus-go)
 **Related:** [Agent Chat Governance Framework v1.0](/mnt/c/Users/kuang/DeepArchi-Vault/02-多Agent架构/Agent群聊发言治理框架-v1.md), [A2A Protocol](https://a2a-protocol.org)

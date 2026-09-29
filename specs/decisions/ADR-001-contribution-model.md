@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-08-03  
-**Author:** 邝谧 (kuangmi@deeparchi.com.cn)  
+**Author:** 邝谧 (user@example.com)  
 **Inspired by:** [QM CONTRIBUTING.md](https://github.com/yc-software/qm/blob/main/CONTRIBUTING.md)
 
 ## Context
