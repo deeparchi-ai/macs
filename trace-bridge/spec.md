@@ -69,7 +69,7 @@ To identify bridge-originated traces, an additional `tracestate` entry:
 deeparchi=br:{version}
 ```
 
-Where `{version}` is the bridge spec version (e.g., `br:1`). This allows downstream systems to detect bridge-propagated traces and apply bridge-specific policies.
+Where `{version}` is the wire-format version of the entry, not the revision of this document. It is fixed at `1` and is incremented only when the entry's meaning changes incompatibly, so downstream systems can keep using `deeparchi=br:1` across document revisions such as 0.1 → 0.3.1. This allows downstream systems to detect bridge-propagated traces and apply bridge-specific policies.
 
 W3C Trace Context §3.5 recommends placing a newly added or modified `tracestate` entry at the beginning (left) of the list; size truncation removes entries from the end, so the left position is also the one that survives longest. The bridge therefore prepends `deeparchi=br:1`.
 
