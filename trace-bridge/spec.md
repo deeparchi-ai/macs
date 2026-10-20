@@ -1,6 +1,6 @@
 # Cross-Protocol Trace Context Bridge
 
-## A2A ↔ MCP Trace Context Propagation Specification v0.3
+## A2A ↔ MCP Trace Context Propagation Specification v0.3.1
 
 > **DeepArchi · 邝谧**  
 > 2026-07-03 · Working Draft · last revised 2026-10-21
@@ -36,10 +36,10 @@ In a multi-agent system, an orchestrator sends an A2A task to a research agent, 
 
 HTTP headers (`traceparent`, `tracestate`) work for HTTP-based transports, but:
 - MCP is often **stdio-based** (no HTTP headers)
-- A2A supports gRPC and WebSocket (different header semantics)
-- Message-level embedding survives queueing, batching, and retry
+- A2A's bindings differ in header semantics: JSON-RPC and HTTP+JSON carry HTTP headers, gRPC carries its own metadata, and custom bindings (for example WebSocket) may have neither
+- Payload-level embedding survives queueing, batching, and retry
 
-A message-level bridge works for ALL transports.
+A payload-level bridge reaches transports that have no usable header channel. Where a binding does provide headers, those remain the primary carrier (§4.4).
 
 ### 1.3 The SMF Analogy
 
@@ -51,7 +51,7 @@ This specification applies the same principle: W3C `trace-id` is the URID.
 
 ## 2. Canonical Trace Context
 
-The bridge uses W3C Trace Context Level 1 (`version: 00`), forward-compatible with Level 2.
+The bridge uses the W3C Trace Context `traceparent` / `tracestate` formats at `version: 00` — the only version either Trace Context Level 1 or Level 2 specifies. Implementations MUST parse version `00` strictly and SHOULD parse higher versions positionally over the first 55 characters (W3C §3.2.4), so that a future revision does not break the chain; version `ff` is forbidden, as are all-zero trace-ids and parent-ids.
 
 ### 2.1 Required Fields
 
@@ -138,12 +138,15 @@ Same structure for artifacts (tool results, generated content):
 
 ### 3.5 Span Semantics
 
-| A2A Operation | OTel Span Name | Span Kind |
+| A2A operation | OTel span name | Span kind |
 |---------------|----------------|-----------|
-| `tasks/send` | `a2a.tasks/send {agent_name}` | CLIENT |
-| `tasks/get` | `a2a.tasks/get {task_id}` | CLIENT |
-| `message/send` | `a2a.message/send {agent_name}` | CLIENT |
-| Message processing | `a2a.message/process` | SERVER |
+| `SendMessage`, `SendStreamingMessage` | `SendMessage`, `SendStreamingMessage` | CLIENT |
+| `GetTask`, `CancelTask`, `SubscribeToTask` | same as the method name | CLIENT |
+| Request handling | same as the method name | SERVER |
+
+Span names follow the in-flight OpenTelemetry A2A semantic conventions (`open-telemetry/semantic-conventions-genai`, PR #195), which prescribe `{a2a.method.name}` and carry the agent identity as the `gen_ai.agent.name` attribute rather than inside the span name.
+
+Earlier drafts of this document used the pre-1.0 A2A method names (`tasks/send`, `tasks/get`, `message/send`) and embedded the agent name in the span name. Both are withdrawn: A2A 1.0.1 methods are `SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, `SubscribeToTask` and the task push-notification configuration calls.
 
 ---
 
@@ -176,13 +179,15 @@ Citation: <https://modelcontextprotocol.io/specification/2026-07-28/basic> (§ `
 
 ### 4.2 Span Semantics
 
-Per OpenTelemetry Semantic Conventions for MCP (PR #2083):
+Per the OpenTelemetry semantic conventions for MCP (merged as `open-telemetry/semantic-conventions` PR #2083 on 2026-01-12; now maintained in `open-telemetry/semantic-conventions-genai` → `docs/gen-ai/mcp.md`). Span names SHOULD be `{mcp.method.name} {target}`, where `target` matches `gen_ai.tool.name` or `gen_ai.prompt.name` when a low-cardinality target exists, and the bare method name otherwise. Resource URIs SHOULD NOT be part of the default span name because of cardinality.
 
-| MCP Method | OTel Span Name | Span Kind |
+| MCP method | OTel span name | Span type |
 |------------|----------------|-----------|
-| `tools/call` | `tools/call {tool_name}` | CLIENT |
-| `tools/list` | `tools/list` | CLIENT |
-| `resources/read` | `resources/read {uri}` | CLIENT |
+| `tools/call` | `tools/call {gen_ai.tool.name}` | `mcp.client` (CLIENT) |
+| `tools/list` | `tools/list` | `mcp.client` (CLIENT) |
+| `resources/read` | `resources/read` | `mcp.client` (CLIENT) |
+
+The conventions also define `mcp.server` (SERVER) spans for the receiving side, and note that an MCP tool-execution span is compatible with the GenAI `execute_tool` span.
 
 ### 4.3 Notification Handling
 
@@ -464,9 +469,8 @@ TEST BR-4: Privacy mode
 
 | Standard | Relationship |
 |----------|-------------|
-| W3C Trace Context Level 1 | Bridge uses as canonical format |
-| W3C Trace Context Level 2 | Forward-compatible (version auto-negotiation) |
-| OpenTelemetry | Bridge produces OTel-compatible spans |
+| W3C Trace Context (Level 1 and Level 2) | Bridge uses the `traceparent` / `tracestate` formats both levels specify (version `00`); higher versions are parsed positionally per §3.2.4 rather than rejected |
+| OpenTelemetry | Bridge produces OTel-compatible spans; naming follows the A2A and MCP semantic conventions (§3.5, §4.2) |
 | MCP Audit Record SEP (#3004) | Bridge adds trace context to audit records |
 | A2A Extensions | Bridge uses native extension mechanism |
 | MCP `_meta` (spec 2026-07-28) | Bridge uses the reserved `traceparent` / `tracestate` / `baggage` keys; W3C formats are a MUST on the MCP side |
@@ -483,6 +487,7 @@ This specification introduces **no new protocol**. It occupies existing extensio
 | 0.1.1 | 2026-10-21 | Editorial correction: §4.1 now cites MCP specification 2026-07-28, where `traceparent`/`tracestate`/`baggage` are reserved `_meta` keys with a W3C-format MUST (the 2025-06-18 and 2025-11-25 revisions did not define them). No protocol change. |
 | 0.2 | 2026-10-21 | New §4.4 carrier coverage: `GetTaskRequest` / `SubscribeToTaskRequest` have no `metadata` and push callbacks carry a `StreamResponse`, so transport headers are the primary carrier with message `metadata` as fallback and header-wins on conflict; §5.1 / §5.2 extraction order updated to match. Normative addition, breaking for implementations that assumed a metadata-only carrier. |
 | 0.3 | 2026-10-21 | §5 rework: new §5.0 parent-selection rules (outbound parent comes from the local operation Context; the extracted remote Context is a fallback only), propagation-only mode, full-Context requirement, SDK ID-generator note; §5.1/§5.2 algorithms reordered to create-then-inject, no longer hand-generate span-ids, and extract from transport headers before message metadata; span chains marked as fully instrumented examples. §2.2 notes W3C tracestate ordering. |
+| 0.3.1 | 2026-10-21 | Corrections against current sources: §3.5 updated to A2A 1.0.1 method names (`SendMessage`, `GetTask`, `CancelTask`, `SubscribeToTask` — the pre-1.0 `tasks/send` / `message/send` forms are withdrawn) and to the in-flight OTel A2A semconv naming `{a2a.method.name}` with the agent as `gen_ai.agent.name`; §4.2 cites the merged OTel MCP conventions (PR #2083, now in `semantic-conventions-genai`) and its `{mcp.method.name} {target}` rule; §1.2 and §2 corrected on A2A bindings and traceparent version handling (higher versions parsed positionally per W3C §3.2.4, `ff` and all-zero ids rejected); §1.2 no longer claims a payload carrier covers every transport. Editorial. |
 | planned 0.4 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
 
 ---
