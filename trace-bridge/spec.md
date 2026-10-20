@@ -1,6 +1,6 @@
 # Cross-Protocol Trace Context Bridge
 
-## A2A ↔ MCP Trace Context Propagation Specification v0.2
+## A2A ↔ MCP Trace Context Propagation Specification v0.3
 
 > **DeepArchi · 邝谧**  
 > 2026-07-03 · Working Draft · last revised 2026-10-21
@@ -70,6 +70,8 @@ deeparchi=br:{version}
 ```
 
 Where `{version}` is the bridge spec version (e.g., `br:1`). This allows downstream systems to detect bridge-propagated traces and apply bridge-specific policies.
+
+W3C Trace Context §3.5 recommends placing a newly added or modified `tracestate` entry at the beginning (left) of the list, and truncation removes entries from the end — a right-appended entry is therefore the first to be dropped. The v0.1 reference implementation appends to the right; that deviation is SHOULD-level and must be aligned before this specification leaves Working Draft.
 
 ---
 
@@ -210,34 +212,60 @@ A metadata-only carrier therefore cannot carry context through task polling, res
 
 ## 5. Bridge Behavior
 
+### 5.0 Span and context responsibilities
+
+The bridge moves propagation context between carriers. It does not own span topology: span creation, naming, kind, activation and lifetime belong to the instrumentation of the host, and this specification does not require any particular receiving-side span to exist.
+
+Three rules apply to both directions:
+
+- **Parent selection.** When an outbound span is created, its parent MUST be selected from the Context of the local operation that initiates the outbound call. An existing local operation Context MUST NOT be replaced by the extracted remote Context merely because the protocol changes. If the initiating operation has no local span, the validated extracted remote Context MAY be used directly as parent.
+- **Full Context, not a bare span-id.** A W3C `traceparent` is not a parent by itself: OpenTelemetry requires a full `Context` ("The API MUST NOT accept a Span or SpanContext as parent, only a full Context"), so trace-id, `tracestate`, trace flags and remote-ness travel with it.
+- **Propagation-only mode.** If no outbound span is created, the accepted inbound `traceparent` and `tracestate` MUST be propagated unchanged. W3C §3.4: "If the value of the traceparent field wasn't changed before propagation, tracestate MUST NOT be modified as well" — therefore the `deeparchi=br:1` marker MUST NOT be added in this mode.
+
+> On span kind: the SERVER/CLIENT chains in §5.1 and §5.2 illustrate a fully instrumented request–response exchange. Deferred or queue-based processing may use CONSUMER/PRODUCER instead; the rules above are independent of kind.
+
+> Implementation note — a host that runs an OpenTelemetry SDK MUST inject the `SpanContext` of the span the SDK created; the span-id comes from the SDK's ID generator, not from the bridge. Bridge-generated IDs (`NewSpanID` / `UpdateSpanID` in the reference implementation) exist for hosts that do not run an SDK, and MUST NOT be used to override an SDK-created span.
+
 ### 5.1 A2A → MCP (Inbound Bridge)
 
 When an A2A agent receives a message containing the trace context extension and subsequently calls an MCP tool:
 
 ```
-INPUT:   A2A message with metadata[extension-uri].traceparent
+INPUT:   A2A request carrying trace context — transport headers (primary) or message metadata (fallback)
 OUTPUT:  MCP tools/call with params._meta.traceparent
 ```
 
 **Algorithm:**
 
 ```
-1. EXTRACT traceparent, tracestate, baggage from the inbound transport headers; if absent, fall back to A2A message.metadata (§4.4)
-2. GENERATE new span-id for the MCP call (16 hex chars, CSPRNG)
-3. SET traceparent.flags: inherit sampled flag from A2A
-4. PRESERVE tracestate: append "deeparchi=br:1" if not present
-5. INJECT into MCP params._meta
-6. CREATE OTel span: CLIENT, name="tools/call {tool_name}", parent=old_span_id
+1. EXTRACT the inbound propagation context — from the transport headers first,
+   then from A2A message.metadata as fallback (§4.4). Validate the
+   traceparent; an all-zero trace-id or parent-id is invalid and MUST be
+   treated as absent (W3C §3.2.2.3 / §3.2.2.4).
+2. OBTAIN the Context of the operation initiating the MCP call — normally the
+   handler processing this A2A message. If that handler has a span, it is the
+   parent; if it has none, use the validated extracted remote Context.
+3. CREATE the outbound tools/call span from that parent Context, or reuse an
+   existing span for the same call. The receiving agent's own processing span,
+   if any, is created by its handler, not by the bridge.
+4. INJECT the resulting Context — the outbound span's actual SpanContext plus
+   tracestate and baggage — into params._meta. Add "deeparchi=br:1" to
+   tracestate only if traceparent is rewritten (§5.0).
+5. SEND the tools/call.
 ```
 
-**Span Chain:**
+**Span Chain** (fully instrumented example):
 
 ```
 A2A Orchestrator Agent (SERVER, trace=t, span=s1)
   └── A2A message/send (CLIENT, trace=t, span=s2, parent=s1)
-      └── MCP tools/call web_search (CLIENT, trace=t, span=s3, parent=s2)
-          └── Web Search Tool (SERVER, trace=t, span=s4, parent=s3)
+      │      A2A hop carries parent-id=s2
+      └── A2A message/process (SERVER, trace=t, span=s3, parent=s2)   <- instrumentation-owned
+          └── MCP tools/call web_search (CLIENT, trace=t, span=s4, parent=s3)
+              └── Web Search Tool (SERVER, trace=t, span=s5, parent=s4)
 ```
+
+The s3 span exists only if the receiving agent instruments its message handler. When it does not, step 2 falls back to the extracted remote Context and the MCP client span becomes a direct child of s2: one hop is lost from the tree, but the chain stays connected. A bridge that sets the outbound parent to the extracted span-id even when a local handler span exists is the case to avoid — it discards the local causal context that the instrumentation already recorded.
 
 ### 5.2 MCP → A2A (Outbound Bridge)
 
@@ -251,12 +279,18 @@ OUTPUT:  A2A message with metadata[extension-uri].traceparent
 **Algorithm:**
 
 ```
-1. EXTRACT traceparent, tracestate, baggage from MCP params._meta
-2. GENERATE new span-id for the A2A message (16 hex chars, CSPRNG)
-3. PRESERVE tracestate
-4. INJECT into A2A message.metadata under extension URI, and into transport headers when the binding provides them (§4.4)
-5. SET A2A-Extensions header (if HTTP transport)
-6. CREATE OTel span: CLIENT, name="a2a.message/send {agent_name}", parent=old_span_id
+1. EXTRACT traceparent, tracestate and baggage from MCP params._meta (reserved
+   keys; invalid values are treated as absent).
+2. OBTAIN the Context of the operation initiating the A2A call — normally the
+   tool handler's current span. If it has none, use the validated extracted
+   remote Context.
+3. CREATE or reuse the outbound a2a.message/send span from that Context.
+4. INJECT its SpanContext plus tracestate and baggage into A2A
+   message.metadata under the extension URI — and into transport headers when
+   the binding provides them (§4.4) — adding "deeparchi=br:1" only if
+   traceparent is rewritten (§5.0).
+5. SET the A2A-Extensions header (HTTP transport).
+6. SEND the message.
 ```
 
 ### 5.3 Bridge Chaining (Multi-Hop)
@@ -267,7 +301,7 @@ The bridge is idempotent across multiple hops:
 A2A → MCP → A2A → MCP → Tool
 ```
 
-Each boundary generates a new span-id; the trace-id is invariant. The `deeparchi=br:1` tracestate entry signals "already bridged" — subsequent bridges MUST NOT re-wrap.
+Each boundary creates a new span (or reuses an existing one for the same outbound call); the trace-id is invariant. In propagation-only mode no span is created and the context is forwarded unchanged. The `deeparchi=br:1` tracestate entry signals "already bridged" — subsequent bridges MUST NOT re-wrap.
 
 ### 5.4 Error Handling
 
@@ -448,7 +482,8 @@ This specification introduces **no new protocol**. It occupies existing extensio
 | 0.1 | 2026-07-03 | Initial working draft: A2A↔MCP bidirectional mapping, audit trail semantics, SMF analogy, privacy mode |
 | 0.1.1 | 2026-10-21 | Editorial correction: §4.1 now cites MCP specification 2026-07-28, where `traceparent`/`tracestate`/`baggage` are reserved `_meta` keys with a W3C-format MUST (the 2025-06-18 and 2025-11-25 revisions did not define them). No protocol change. |
 | 0.2 | 2026-10-21 | New §4.4 carrier coverage: `GetTaskRequest` / `SubscribeToTaskRequest` have no `metadata` and push callbacks carry a `StreamResponse`, so transport headers are the primary carrier with message `metadata` as fallback and header-wins on conflict; §5.1 / §5.2 extraction order updated to match. Normative addition, breaking for implementations that assumed a metadata-only carrier. |
-| planned 0.3 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
+| 0.3 | 2026-10-21 | §5 rework: new §5.0 parent-selection rules (outbound parent comes from the local operation Context; the extracted remote Context is a fallback only), propagation-only mode, full-Context requirement, SDK ID-generator note; §5.1/§5.2 algorithms reordered to create-then-inject, no longer hand-generate span-ids, and extract from transport headers before message metadata; span chains marked as fully instrumented examples. §2.2 notes W3C tracestate ordering. |
+| planned 0.4 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
 
 ---
 
