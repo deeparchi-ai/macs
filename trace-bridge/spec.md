@@ -1,9 +1,9 @@
 # Cross-Protocol Trace Context Bridge
 
-## A2A ↔ MCP Trace Context Propagation Specification v0.1
+## A2A ↔ MCP Trace Context Propagation Specification v0.2
 
 > **DeepArchi · 邝谧**  
-> 2026-07-03 · Working Draft
+> 2026-07-03 · Working Draft · last revised 2026-10-21
 
 ---
 
@@ -186,6 +186,26 @@ Per OpenTelemetry Semantic Conventions for MCP (PR #2083):
 
 MCP notifications (messages without `id`) MUST propagate trace context but MUST NOT create new spans. Observations are attached to the parent span.
 
+### 4.4 Carrier Coverage on the A2A Side
+
+This extension embeds trace context in message `metadata`. Not every A2A operation has that field. Verified against `specification/a2a.proto` at tag `v1.0.1`:
+
+| Operation | Request message | `metadata` field |
+|-----------|-----------------|------------------|
+| SendMessage / SendStreamingMessage | `SendMessageRequest` | yes (`metadata = 4`) |
+| CancelTask | `CancelTaskRequest` | yes (`metadata = 3`) |
+| GetTask | `GetTaskRequest` | **no** (`tenant`, `id`, `history_length`) |
+| SubscribeToTask | `SubscribeToTaskRequest` | **no** (`tenant`, `id`); the GET binding has no body |
+| Push-notification delivery (agent → webhook) | none; body is a `StreamResponse` | not applicable |
+
+A metadata-only carrier therefore cannot carry context through task polling, resubscription, or push callbacks — that is, through most of a long-running task's life. Implementations MUST:
+
+1. Treat transport-level context as the primary carrier: `traceparent` / `tracestate` / `baggage` as HTTP headers on HTTP bindings, and as gRPC metadata on gRPC.
+2. Treat message `metadata` as the fallback carrier, for custom bindings without a header channel.
+3. When both are present, the transport header wins. The two sources MUST NOT be merged or reconciled field by field.
+4. Agents SHOULD send `traceparent` on push-notification POSTs so callbacks join the originating trace.
+5. `GetTask` and `SubscribeToTask` MUST NOT be treated as children of the originating execution span. Where causal linkage is required, express it as a span link rather than a parent-child relation.
+
 ---
 
 ## 5. Bridge Behavior
@@ -202,7 +222,7 @@ OUTPUT:  MCP tools/call with params._meta.traceparent
 **Algorithm:**
 
 ```
-1. EXTRACT traceparent, tracestate, baggage from A2A message.metadata
+1. EXTRACT traceparent, tracestate, baggage from the inbound transport headers; if absent, fall back to A2A message.metadata (§4.4)
 2. GENERATE new span-id for the MCP call (16 hex chars, CSPRNG)
 3. SET traceparent.flags: inherit sampled flag from A2A
 4. PRESERVE tracestate: append "deeparchi=br:1" if not present
@@ -234,7 +254,7 @@ OUTPUT:  A2A message with metadata[extension-uri].traceparent
 1. EXTRACT traceparent, tracestate, baggage from MCP params._meta
 2. GENERATE new span-id for the A2A message (16 hex chars, CSPRNG)
 3. PRESERVE tracestate
-4. INJECT into A2A message.metadata under extension URI
+4. INJECT into A2A message.metadata under extension URI, and into transport headers when the binding provides them (§4.4)
 5. SET A2A-Extensions header (if HTTP transport)
 6. CREATE OTel span: CLIENT, name="a2a.message/send {agent_name}", parent=old_span_id
 ```
@@ -427,7 +447,8 @@ This specification introduces **no new protocol**. It occupies existing extensio
 |---------|------|---------|
 | 0.1 | 2026-07-03 | Initial working draft: A2A↔MCP bidirectional mapping, audit trail semantics, SMF analogy, privacy mode |
 | 0.1.1 | 2026-10-21 | Editorial correction: §4.1 now cites MCP specification 2026-07-28, where `traceparent`/`tracestate`/`baggage` are reserved `_meta` keys with a W3C-format MUST (the 2025-06-18 and 2025-11-25 revisions did not define them). No protocol change. |
-| planned 0.2 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
+| 0.2 | 2026-10-21 | New §4.4 carrier coverage: `GetTaskRequest` / `SubscribeToTaskRequest` have no `metadata` and push callbacks carry a `StreamResponse`, so transport headers are the primary carrier with message `metadata` as fallback and header-wins on conflict; §5.1 / §5.2 extraction order updated to match. Normative addition, breaking for implementations that assumed a metadata-only carrier. |
+| planned 0.3 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
 
 ---
 
