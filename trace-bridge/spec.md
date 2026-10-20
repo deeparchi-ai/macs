@@ -149,7 +149,11 @@ Same structure for artifacts (tool results, generated content):
 
 ### 4.1 _meta Embedding
 
-MCP reserves `traceparent`, `tracestate`, and `baggage` as unprefixed keys in `params._meta` (draft spec exception to prefix requirement).
+MCP reserves `traceparent`, `tracestate`, and `baggage` as unprefixed keys in `params._meta`. The MCP specification 2026-07-28 defines them normatively (§ `_meta`, "OpenTelemetry trace context"):
+
+> As an exception to the prefix requirement above, the keys `traceparent`, `tracestate`, and `baggage` are reserved for OpenTelemetry trace context propagation. When present, their values MUST follow W3C Trace Context and W3C Baggage formats respectively.
+
+Citation: <https://modelcontextprotocol.io/specification/2026-07-28/basic> (§ `_meta`). Earlier MCP revisions (2025-06-18, 2025-11-25) did not define these keys at all; the reservation entered the specification with the 2026-07-28 revision. Consequently the bridge needs no MCP-side extension URI — it writes the reserved keys directly, and the field formats defined in §2.1 already satisfy the MUST above.
 
 ```json
 {
@@ -411,7 +415,7 @@ TEST BR-4: Privacy mode
 | OpenTelemetry | Bridge produces OTel-compatible spans |
 | MCP Audit Record SEP (#3004) | Bridge adds trace context to audit records |
 | A2A Extensions | Bridge uses native extension mechanism |
-| MCP _meta | Bridge uses reserved trace keys |
+| MCP `_meta` (spec 2026-07-28) | Bridge uses the reserved `traceparent` / `tracestate` / `baggage` keys; W3C formats are a MUST on the MCP side |
 
 This specification introduces **no new protocol**. It occupies existing extension points and defines canonical mapping rules.
 
@@ -422,6 +426,7 @@ This specification introduces **no new protocol**. It occupies existing extensio
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1 | 2026-07-03 | Initial working draft: A2A↔MCP bidirectional mapping, audit trail semantics, SMF analogy, privacy mode |
+| 0.1.1 | 2026-10-21 | Editorial correction: §4.1 now cites MCP specification 2026-07-28, where `traceparent`/`tracestate`/`baggage` are reserved `_meta` keys with a W3C-format MUST (the 2025-06-18 and 2025-11-25 revisions did not define them). No protocol change. |
 | planned 0.2 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
 
 ---
