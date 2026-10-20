@@ -71,7 +71,7 @@ deeparchi=br:{version}
 
 Where `{version}` is the bridge spec version (e.g., `br:1`). This allows downstream systems to detect bridge-propagated traces and apply bridge-specific policies.
 
-W3C Trace Context §3.5 recommends placing a newly added or modified `tracestate` entry at the beginning (left) of the list, and truncation removes entries from the end — a right-appended entry is therefore the first to be dropped. The v0.1 reference implementation appends to the right; that deviation is SHOULD-level and must be aligned before this specification leaves Working Draft.
+W3C Trace Context §3.5 recommends placing a newly added or modified `tracestate` entry at the beginning (left) of the list; size truncation removes entries from the end, so the left position is also the one that survives longest. The bridge therefore prepends `deeparchi=br:1`.
 
 ---
 
