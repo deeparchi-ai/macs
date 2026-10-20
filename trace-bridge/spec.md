@@ -1,6 +1,6 @@
 # Cross-Protocol Trace Context Bridge
 
-## A2A ↔ MCP Trace Context Propagation Specification v0.3.1
+## A2A ↔ MCP Trace Context Propagation Specification v0.3.2
 
 > **DeepArchi · 邝谧**  
 > 2026-07-03 · Working Draft · last revised 2026-10-21
@@ -136,7 +136,9 @@ Same structure for artifacts (tool results, generated content):
 }
 ```
 
-### 3.5 Span Semantics
+### 3.5 Span Semantics (non-normative)
+
+This section is informational. No wire behaviour in this specification depends on it: a bridge is correct even if the host names its spans differently, and where the host already instruments A2A, follow the host's conventions rather than this table. The bridge needs the trace identifiers, not the span names.
 
 | A2A operation | OTel span name | Span kind |
 |---------------|----------------|-----------|
@@ -144,7 +146,7 @@ Same structure for artifacts (tool results, generated content):
 | `GetTask`, `CancelTask`, `SubscribeToTask` | same as the method name | CLIENT |
 | Request handling | same as the method name | SERVER |
 
-Span names follow the in-flight OpenTelemetry A2A semantic conventions (`open-telemetry/semantic-conventions-genai`, PR #195), which prescribe `{a2a.method.name}` and carry the agent identity as the `gen_ai.agent.name` attribute rather than inside the span name.
+The table tracks the in-flight OpenTelemetry A2A semantic conventions (`open-telemetry/semantic-conventions-genai`, PR #195), which prescribe `{a2a.method.name}` and carry the agent identity as the `gen_ai.agent.name` attribute rather than inside the span name. That work is not ratified; if it lands with a different naming rule, this section follows the conventions and nothing else in the specification changes.
 
 Earlier drafts of this document used the pre-1.0 A2A method names (`tasks/send`, `tasks/get`, `message/send`) and embedded the agent name in the span name. Both are withdrawn: A2A 1.0.1 methods are `SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, `SubscribeToTask` and the task push-notification configuration calls.
 
@@ -488,6 +490,7 @@ This specification introduces **no new protocol**. It occupies existing extensio
 | 0.2 | 2026-10-21 | New §4.4 carrier coverage: `GetTaskRequest` / `SubscribeToTaskRequest` have no `metadata` and push callbacks carry a `StreamResponse`, so transport headers are the primary carrier with message `metadata` as fallback and header-wins on conflict; §5.1 / §5.2 extraction order updated to match. Normative addition, breaking for implementations that assumed a metadata-only carrier. |
 | 0.3 | 2026-10-21 | §5 rework: new §5.0 parent-selection rules (outbound parent comes from the local operation Context; the extracted remote Context is a fallback only), propagation-only mode, full-Context requirement, SDK ID-generator note; §5.1/§5.2 algorithms reordered to create-then-inject, no longer hand-generate span-ids, and extract from transport headers before message metadata; span chains marked as fully instrumented examples. §2.2 notes W3C tracestate ordering. |
 | 0.3.1 | 2026-10-21 | Corrections against current sources: §3.5 updated to A2A 1.0.1 method names (`SendMessage`, `GetTask`, `CancelTask`, `SubscribeToTask` — the pre-1.0 `tasks/send` / `message/send` forms are withdrawn) and to the in-flight OTel A2A semconv naming `{a2a.method.name}` with the agent as `gen_ai.agent.name`; §4.2 cites the merged OTel MCP conventions (PR #2083, now in `semantic-conventions-genai`) and its `{mcp.method.name} {target}` rule; §1.2 and §2 corrected on A2A bindings and traceparent version handling (higher versions parsed positionally per W3C §3.2.4, `ff` and all-zero ids rejected); §1.2 no longer claims a payload carrier covers every transport. Editorial. |
+| 0.3.2 | 2026-10-21 | §3.5 marked non-normative: span naming is informational and the bridge's wire behaviour does not depend on it, so the specification no longer leans on an unratified OTel convention for compliance. No protocol change. |
 | planned 0.4 | TBD | Add gRPC transport binding, WebSocket support, test vectors as conformance suite |
 
 ---
