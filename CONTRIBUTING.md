@@ -65,6 +65,8 @@ Do not open a public issue or PR.
 - [macs/specs/](specs/) — per-subsystem design specs and acceptance tests
 - [specs/decisions/ADR-001-contribution-model.md](specs/decisions/ADR-001-contribution-model.md) —
   the ADR that established this policy
+- [specs/decisions/ADR-002-framework-implementation-decoupling.md](specs/decisions/ADR-002-framework-implementation-decoupling.md) —
+  what MAEA absorbing an external architecture does (and does not) oblige MACS to build
 
 ## License
 
