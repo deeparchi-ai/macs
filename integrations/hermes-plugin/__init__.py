@@ -190,7 +190,9 @@ def _json_fallback(o: Any) -> Any:
 
 def _write_dump(base_dir: str, dump: Dict[str, Any]) -> Optional[str]:
     try:
-        date = (dump.get("captured_at", "") or "")[:10] or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        # Bucket by LOCAL date: captured_at is UTC, so slicing it put evening
+        # dumps (CST) into the previous day's folder and split daily reports.
+        date = datetime.now().strftime("%Y-%m-%d")
         day = os.path.join(os.path.expanduser(base_dir), date)
         os.makedirs(day, exist_ok=True)
         c = dump.get("correlation", {})
