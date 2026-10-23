@@ -76,5 +76,33 @@ def test_vendored_clean_turn_no_dump():
         assert _dumps(tmp) == []
 
 
+def test_vendored_unserializable_payload_still_writes_valid_json():
+    """Regression: a live Python object in the observer payload must never leave a
+    truncated dump. Historically json.dump() raised mid-stream (TypeError on a
+    non-serializable assistant_message) and the fail-open handler swallowed it,
+    leaving unparseable .json files — 556/556 on a real box."""
+    mod = _load()
+
+    class Weird:  # stands in for a provider-SDK response object
+        def __init__(self):
+            self.content = "hi"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        ctx = FakeCtx({"dir": tmp, "triggers": [{"predicate": "latency", "threshold_ms": 30000}]})
+        mod.register(ctx)
+        ctx.emit("pre_api_request", session_id="s", task_id="k", api_call_count=1,
+                 request_messages=[{"role": "user", "content": "q"}], model="m")
+        ctx.emit("post_api_request", session_id="s", task_id="k", api_call_count=1,
+                 assistant_message=Weird(), finish_reason="stop", api_duration=42.0,
+                 usage={"input_tokens": 1})
+        files = [f for f in _dumps(tmp) if not os.path.basename(f).startswith("FAILED")]
+        assert files, "trigger fired but no dump written"
+        d = json.load(open(files[0], encoding="utf-8"))  # must parse — no truncation
+        assert d["trigger"]["predicate"] == "latency"
+        assert d["llm_response"]["assistant_message"]["content"] == "hi"
+        leftovers = [n for _r, _d, ns in os.walk(tmp) for n in ns if n.endswith(".tmp")]
+        assert leftovers == [], "atomic write left temp files behind"
+
+
 if __name__ == "__main__":
     raise SystemExit(_bootstrap.run_module(dict(globals())))

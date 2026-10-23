@@ -164,6 +164,30 @@ class _Collector:
         }
 
 
+def _json_fallback(o: Any) -> Any:
+    """Last-resort serializer — never raise, so a dump is never half-written.
+
+    Observer payloads sometimes carry live Python objects (dataclasses, sets,
+    bytes, provider SDK response objects). Without this, ``json.dump`` raises
+    *mid-stream* and leaves a truncated .json on disk that can never be parsed
+    (observed: 556/556 dumps truncated at ``llm_response.assistant_message``).
+    """
+    try:
+        if isinstance(o, (set, frozenset)):
+            return sorted(str(x) for x in o)
+        if isinstance(o, (bytes, bytearray)):
+            return o.decode("utf-8", "replace")
+        if hasattr(o, "_asdict"):          # namedtuple
+            return dict(o._asdict())
+        if hasattr(o, "__dict__"):         # dataclass / SDK object
+            return {k: v for k, v in vars(o).items() if not k.startswith("_")}
+        if isinstance(o, BaseException):
+            return f"{type(o).__name__}: {o}"
+    except Exception:                       # noqa: BLE001 - fallback must never raise
+        pass
+    return repr(o)[:2000]
+
+
 def _write_dump(base_dir: str, dump: Dict[str, Any]) -> Optional[str]:
     try:
         date = (dump.get("captured_at", "") or "")[:10] or datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -172,16 +196,34 @@ def _write_dump(base_dir: str, dump: Dict[str, Any]) -> Optional[str]:
         c = dump.get("correlation", {})
         path = os.path.join(day, f"{str(c.get('session_id') or 'ns')[:24]}__"
                                  f"{str(c.get('turn_id') or 'nt')[:24]}__{dump['dump_id']}.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(dump, f, ensure_ascii=False, indent=2)
+        # Serialize fully in memory first: a write must never leave a half file.
+        payload = json.dumps(dump, ensure_ascii=False, indent=2, default=_json_fallback)
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(payload)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
         with open(os.path.join(day, "index.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps({"dump_id": dump["dump_id"], "captured_at": dump["captured_at"],
-                                "trigger": dump["trigger"].get("predicate"),
+                                "trigger": (dump.get("trigger") or {}).get("predicate"),
                                 "session_id": c.get("session_id"), "turn_id": c.get("turn_id"),
                                 "path": path}, ensure_ascii=False) + "\n")
         return path
     except Exception as e:  # fail-open
         logger.warning("macs_dump: sink write failed: %r", e)
+        # Leave an honest tombstone instead of silence: a lost dump must be visible.
+        try:
+            date = (dump.get("captured_at", "") or "")[:10] or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            day = os.path.join(os.path.expanduser(base_dir), date)
+            os.makedirs(day, exist_ok=True)
+            with open(os.path.join(day, f"FAILED__{dump.get('dump_id', 'unknown')}.json"), "w",
+                      encoding="utf-8") as f:
+                json.dump({"dump_id": dump.get("dump_id"), "captured_at": dump.get("captured_at"),
+                           "write_error": repr(e), "trigger": dump.get("trigger")},
+                          f, ensure_ascii=False, indent=2)
+        except Exception:  # noqa: BLE001
+            pass
         return None
 
 
