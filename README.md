@@ -1,8 +1,8 @@
 # MACS — Multi-Agent Coordination System
 
-> **MACS is the Agent OS.** Fourteen subsystems — from resource regulation to
-> tri-model cross-validation to crash recovery — modelled on IBM z/OS, built
-> for multi-agent networks.
+> **MACS is the cross-runtime artifact admission and evidence layer.**
+> Given a plugin/skill package and a policy, it returns allow/deny, the rationale,
+> and a regulator-ready evidence package. It does not take over runtimes, hold sessions, or touch tokens.
 
 Canonical specification: [MACS Governance Specification v3.0](https://github.com/deeparchi-ai/MAEA-Framework/blob/main/specs/macs-governance-spec.md)
 

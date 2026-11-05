@@ -24,7 +24,8 @@ Full specification: [MACS Governance Specification v3.0](https://github.com/deep
 
 ## Non-Goals
 
-- Not a new runtime/platform; no cluster to operate.
+- Not a new runtime/platform; no cluster to operate. Does not take over runtimes, hold sessions, or touch tokens.
+- Only provides cross-runtime artifact admission and evidence: plugin/skill package + policy in; allow/deny + rationale + regulator-ready evidence package out.
 - Does not capture raw internal objects — sanitized telemetry view only.
 - Upstream plugin stays self-contained / zero-dependency for mergeability.
 
