@@ -63,3 +63,5 @@ Canonical specification: [MACS Governance Specification v3.0](https://github.com
 ---
 
 > *DeepArchi Team · MIT License*
+
+> **曾用名 / Formerly**：本仓库早期以「MACS — Agent OS」对外介绍，并把 14 个子系统与 IBM z/OS 做逐项对照。该说法已于 2026-11 退役：子系统对照表仍在 [docs/subsystems.md](docs/subsystems.md) 作为工程参考，但不再作为品类定义。当前口径是 **AEG（Agent Execution Governance · Agent 执行治理）**。
